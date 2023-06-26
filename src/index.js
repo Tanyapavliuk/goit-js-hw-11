@@ -13,12 +13,17 @@ import { createMarkup } from "./js/markup";
 const refs = {
     form: document.querySelector("#search-form"),
     wrapperGalery: document.querySelector(".gallery"),
-    guard: document.querySelector(".js-guard")
+    guard: document.querySelector(".js-guard"),
+    buttonMore: document.querySelector(".load-more")
 }
 //---------скриття кнопки------------//
+refs.buttonMore.classList.add("is-hidden");
+
+let gallery = new SimpleLightbox('.gallery a');// додавання слайдеру 
 
 refs.form.addEventListener("submit", onClickSubmitBtn);
 refs.wrapperGalery.addEventListener("click", onClickGellaryItem);
+refs.buttonMore.addEventListener("click", onClickBtnMore);
 
 let searchThis; //---------змінна для значення інпуту------------//
 
@@ -28,14 +33,14 @@ const scroll = new OnlyScroll(document.scrollingElement, {
 });
 //---------Для безкінечного скролу (Intersection_Observer_API)------------//
 
-let options = {
-    root: null,
-    rootMargin: "500px",
-};
+// let options = {
+//     root: null,
+//     rootMargin: "500px",
+// };
 
-let observer = new IntersectionObserver(() => {
-    onClickDtnMore(); // виклик функції
-}, options);
+// let observer = new IntersectionObserver(() => {
+//     onClickDtnMore(); // виклик функції
+// }, options);
 //--------------------//
 
 function onClickSubmitBtn(evt) {
@@ -52,34 +57,43 @@ function onClickSubmitBtn(evt) {
                 refs.form.children[0].value = " ";
                 return;
             }
-             Notiflix.Notify.info(`Hooray! We found ${data.totalHits} images.`)
+             
             if (data.totalHits < 40) { // якщо фото менше 40 не показувати кнопку
                 renderMarkup(createMarkup(data.hits));
+                Notiflix.Notify.info(`Hooray! We found ${data.totalHits} images.`)
+                setTimeout(() => {
+                    Notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
+                }, 1500)
                 return;
             }
 
             renderMarkup(createMarkup(data.hits));
-            observer.observe(refs.guard);})
-        .catch(er => console.warn(er));
+           
+            refs.buttonMore.classList.remove("is-hidden");
+            // observer.observe(refs.guard);}) //безкінечний скрол
+            })
+        .catch(er => console.warn(er))
+        .finally(()=>{gallery.refresh();});
     
 }
 
-function onClickDtnMore() {
+function onClickBtnMore() {
     getMore(searchThis).then(data => {
-        
-        if (data.totalHits < 40 ) {
-        return;
-        }
-
+    
         if (data.hits.length < 40) {
             renderMarkup(createMarkup(data.hits));
-            Notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
+            Notiflix.Notify.info(`Hooray! We found ${data.totalHits} images.`)
+            setTimeout(() => {
+                    Notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
+                }, 1500)
+            
+            refs.buttonMore.classList.add("is-hidden");
             return;
         }
         renderMarkup(createMarkup(data.hits));
-        gallery.refresh();
 })
-        .catch(er => console.warn(er));;
+        .catch(er => console.warn(er))
+        .finally(()=>{gallery.refresh();});
 }
 
 function renderMarkup(markup) {
@@ -87,10 +101,5 @@ function renderMarkup(markup) {
 }
 
 function onClickGellaryItem(evt) {
-    evt.preventDefault();
-    if (evt.target.nodeName !== "IMG") {
-        return;
-    }
-    let gallery = new SimpleLightbox('.gallery a');
-    gallery.refresh();
+    evt.preventDefault();   
 }
